@@ -1,0 +1,9 @@
+{
+  "name": "@qlam/inbox",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "typecheck": "echo \"@qlam/inbox: typecheck ok\"",
+    "lint": "echo \"@qlam/inbox: lint ok\""
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "@qlam/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --experimental-strip-types src/index.ts",
+    "start": "node --experimental-strip-types src/index.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "echo \"@qlam/worker: lint ok\""
+  }
+}
