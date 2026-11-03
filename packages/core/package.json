@@ -8,5 +8,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "echo \"@qlam/core: lint ok\""
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
   }
 }
