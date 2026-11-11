@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, ApiError } from "@google/genai";
 import { type z } from "zod";
 
 export interface GenerateJSONParams<T extends z.ZodTypeAny> {
@@ -7,9 +7,83 @@ export interface GenerateJSONParams<T extends z.ZodTypeAny> {
   schema: T;
 }
 
+const RETRY_DELAYS_MS = [1000, 3000, 8000]; // 3 attempts, waiting about 1s, 3s, 8s
+
+/**
+ * Checks whether an error from Gemini is a 429 (Rate Limit) or 503 (Service Unavailable).
+ * Only these two errors are retryable.
+ */
+function isRetryableGeminiError(error: unknown): boolean {
+  if (!error) return false;
+
+  if (error instanceof ApiError) {
+    return error.status === 429 || error.status === 503;
+  }
+
+  const err = error as Record<string, unknown>;
+
+  const status =
+    typeof err.status === "number"
+      ? err.status
+      : typeof err.statusCode === "number"
+        ? err.statusCode
+        : typeof err.code === "number"
+          ? err.code
+          : null;
+
+  if (status === 429 || status === 503) {
+    return true;
+  }
+
+  if (
+    err.status === "429" ||
+    err.status === "503" ||
+    err.code === "429" ||
+    err.code === "503"
+  ) {
+    return true;
+  }
+
+  if (typeof err.message === "string") {
+    const msg = err.message;
+    if (
+      /\b(429|503)\b/.test(msg) ||
+      msg.includes("RESOURCE_EXHAUSTED") ||
+      msg.includes("UNAVAILABLE")
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Retries an asynchronous Gemini operation on 429 and 503 errors only with exponential backoff
+ * (up to 3 attempts, waiting about 1s, 3s, 8s). Re-throws other errors immediately.
+ */
+async function withGeminiRetry<T>(operation: () => Promise<T>): Promise<T> {
+  let attempt = 0;
+
+  while (true) {
+    try {
+      return await operation();
+    } catch (err) {
+      if (isRetryableGeminiError(err) && attempt < RETRY_DELAYS_MS.length) {
+        const delay = RETRY_DELAYS_MS[attempt] ?? 1000;
+        attempt++;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
 /**
  * Generate structured JSON validated against a Zod schema using Gemini.
- * Performs one retry if initial generation or schema validation fails.
+ * Performs retry with exponential backoff on 429/503 errors, and performs
+ * one schema-correction retry if JSON parsing or Zod validation fails.
  */
 export async function generateJSON<T extends z.ZodTypeAny>({
   system,
@@ -32,21 +106,26 @@ export async function generateJSON<T extends z.ZodTypeAny>({
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const response = await ai.models.generateContent({
+    // API call with 429/503 retry
+    const response = await withGeminiRetry(() =>
+      ai.models.generateContent({
         model,
         contents: currentPrompt,
         config: {
           systemInstruction: system,
           responseMimeType: "application/json",
         },
-      });
+      })
+    );
 
-      const text = response.text;
-      if (!text) {
-        throw new Error("Received empty response from Gemini");
-      }
+    const text = response.text;
+    if (!text) {
+      lastError = new Error("Received empty response from Gemini");
+      currentPrompt = `${prompt}\n\n[Correction Required]: Previous response was empty. Please return strictly valid JSON matching the schema.`;
+      continue;
+    }
 
+    try {
       const parsed = JSON.parse(text);
       const validationResult = schema.safeParse(parsed);
 
@@ -71,6 +150,7 @@ export async function generateJSON<T extends z.ZodTypeAny>({
 
 /**
  * Generate 768-dimensional L2-normalized embeddings for a list of texts using Gemini.
+ * Performs retry with exponential backoff on 429 and 503 errors only.
  */
 export async function embed(texts: string[]): Promise<number[][]> {
   if (texts.length === 0) {
@@ -89,13 +169,15 @@ export async function embed(texts: string[]): Promise<number[][]> {
 
   const ai = new GoogleGenAI({ apiKey });
 
-  const response = await ai.models.embedContent({
-    model,
-    contents: texts,
-    config: {
-      outputDimensionality: 768,
-    },
-  });
+  const response = await withGeminiRetry(() =>
+    ai.models.embedContent({
+      model,
+      contents: texts,
+      config: {
+        outputDimensionality: 768,
+      },
+    })
+  );
 
   const rawEmbeddings =
     response.embeddings ??
