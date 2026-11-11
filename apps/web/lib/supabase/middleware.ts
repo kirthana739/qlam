@@ -45,17 +45,44 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    if (pathname === "/app") {
+    // Check onboarding status
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarding_done")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const isOnboardingDone = profile?.onboarding_done === true;
+
+    if (!isOnboardingDone && pathname !== "/app/onboarding") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/app/onboarding";
+      return NextResponse.redirect(url);
+    }
+
+    if (isOnboardingDone && pathname === "/app/onboarding") {
       const url = request.nextUrl.clone();
       url.pathname = "/app/jobs";
+      return NextResponse.redirect(url);
+    }
+
+    if (pathname === "/app") {
+      const url = request.nextUrl.clone();
+      url.pathname = isOnboardingDone ? "/app/jobs" : "/app/onboarding";
       return NextResponse.redirect(url);
     }
   }
 
   // Redirect authenticated user away from /login
   if (pathname === "/login" && user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarding_done")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
     const url = request.nextUrl.clone();
-    url.pathname = "/app/jobs";
+    url.pathname = profile?.onboarding_done ? "/app/jobs" : "/app/onboarding";
     return NextResponse.redirect(url);
   }
 

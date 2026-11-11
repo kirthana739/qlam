@@ -11,13 +11,13 @@ export type ResumeBasicsLocation = z.infer<typeof ResumeBasicsLocationSchema>;
 
 export const ResumeLinkSchema = z.object({
   name: z.string(),
-  url: z.string().url(),
+  url: z.string(),
 });
 export type ResumeLink = z.infer<typeof ResumeLinkSchema>;
 
 export const ResumeBasicsSchema = z.object({
-  name: z.string().min(1),
-  email: z.string().email(),
+  name: z.string().default(""),
+  email: z.string().email().or(z.literal("")).default(""),
   phone: z.string().optional(),
   headline: z.string().optional(),
   location: ResumeBasicsLocationSchema.optional(),
@@ -26,50 +26,50 @@ export const ResumeBasicsSchema = z.object({
 export type ResumeBasics = z.infer<typeof ResumeBasicsSchema>;
 
 export const ResumeExperienceItemSchema = z.object({
-  company: z.string().min(1),
-  position: z.string().min(1),
-  location: z.string().optional(),
-  startDate: z.string().min(1),
-  endDate: z.string().optional(),
+  company: z.string().default(""),
+  position: z.string().default(""),
+  location: z.string().optional().default(""),
+  startDate: z.string().default(""),
+  endDate: z.string().optional().default(""),
   current: z.boolean().default(false),
-  description: z.string().optional(),
+  description: z.string().optional().default(""),
   highlights: z.array(z.string()).default([]),
 });
 export type ResumeExperienceItem = z.infer<typeof ResumeExperienceItemSchema>;
 
 export const ResumeEducationItemSchema = z.object({
-  institution: z.string().min(1),
-  degree: z.string().min(1),
-  fieldOfStudy: z.string().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  gpa: z.string().optional(),
+  institution: z.string().default(""),
+  degree: z.string().default(""),
+  fieldOfStudy: z.string().optional().default(""),
+  startDate: z.string().optional().default(""),
+  endDate: z.string().optional().default(""),
+  gpa: z.string().optional().default(""),
   highlights: z.array(z.string()).default([]),
 });
 export type ResumeEducationItem = z.infer<typeof ResumeEducationItemSchema>;
 
 export const ResumeSkillItemSchema = z.object({
-  name: z.string().min(1),
-  category: z.string().optional(),
-  level: z.string().optional(),
+  name: z.string().default(""),
+  category: z.string().optional().default(""),
+  level: z.string().optional().default(""),
   keywords: z.array(z.string()).default([]),
 });
 export type ResumeSkillItem = z.infer<typeof ResumeSkillItemSchema>;
 
 export const ResumeProjectItemSchema = z.object({
-  name: z.string().min(1),
+  name: z.string().default(""),
   description: z.string().default(""),
-  url: z.string().url().optional().or(z.literal("")),
+  url: z.string().optional().default(""),
   technologies: z.array(z.string()).default([]),
   highlights: z.array(z.string()).default([]),
 });
 export type ResumeProjectItem = z.infer<typeof ResumeProjectItemSchema>;
 
 export const ResumeCertificationItemSchema = z.object({
-  name: z.string().min(1),
-  issuer: z.string().min(1),
-  date: z.string().optional(),
-  url: z.string().url().optional().or(z.literal("")),
+  name: z.string().default(""),
+  issuer: z.string().default(""),
+  date: z.string().optional().default(""),
+  url: z.string().optional().default(""),
 });
 export type ResumeCertificationItem = z.infer<
   typeof ResumeCertificationItemSchema

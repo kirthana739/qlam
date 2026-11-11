@@ -16,3 +16,6 @@ export const coreInfo: WorkspaceInfo = {
 
 export * from "./database.types.js";
 export * from "./schemas/index.js";
+export * from "./ai.js";
+export * from "./prompts/parseResume.js";
+export { z } from "zod";
