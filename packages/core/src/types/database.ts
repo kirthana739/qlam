@@ -11,12 +11,18 @@ import type {
 import type { JobTables } from "./job-tables.js";
 import type { UserTables } from "./user-tables.js";
 
-export type AllTables = UserTables & JobTables;
+type WithRelationships<T> = {
+  [K in keyof T]: T[K] & { Relationships: [] };
+};
 
-export interface Database {
+export type AllTables = WithRelationships<UserTables & JobTables>;
+
+export type Database = {
   public: {
     Tables: AllTables;
-    Views: Record<string, never>;
+    Views: {
+      [_ in never]: never;
+    };
     Functions: {
       generate_inbox_alias: {
         Args: Record<string, never>;
@@ -33,9 +39,11 @@ export interface Database {
       answer_source: AnswerSource;
       application_mode: ApplicationMode;
     };
-    CompositeTypes: Record<string, never>;
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
-}
+};
 
 export type Tables<T extends keyof Database["public"]["Tables"]> =
   Database["public"]["Tables"][T]["Row"];

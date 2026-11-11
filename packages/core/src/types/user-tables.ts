@@ -4,7 +4,7 @@ import type {
   PlanType,
 } from "./enums.js";
 
-export interface UserTables {
+export type UserTables = {
   profiles: {
     Row: {
       id: string;
@@ -57,6 +57,7 @@ export interface UserTables {
       created_at?: string;
       updated_at?: string;
     };
+    Relationships: [];
   };
   resumes: {
     Row: {
@@ -86,6 +87,7 @@ export interface UserTables {
       created_at?: string;
       updated_at?: string;
     };
+    Relationships: [];
   };
   answers: {
     Row: {
@@ -118,6 +120,7 @@ export interface UserTables {
       created_at?: string;
       updated_at?: string;
     };
+    Relationships: [];
   };
   subscriptions: {
     Row: {
@@ -156,6 +159,7 @@ export interface UserTables {
       created_at?: string;
       updated_at?: string;
     };
+    Relationships: [];
   };
   events: {
     Row: {
@@ -179,5 +183,6 @@ export interface UserTables {
       data?: Json;
       created_at?: string;
     };
+    Relationships: [];
   };
 }

@@ -8,7 +8,7 @@ import type {
   Stage,
 } from "./enums.js";
 
-export interface JobTables {
+export type JobTables = {
   companies: {
     Row: {
       id: string;
@@ -17,6 +17,7 @@ export interface JobTables {
       board_token: string;
       active: boolean;
       last_synced_at: string | null;
+      sync_requested_at: string | null;
       created_at: string;
       updated_at: string;
     };
@@ -27,6 +28,7 @@ export interface JobTables {
       board_token: string;
       active?: boolean;
       last_synced_at?: string | null;
+      sync_requested_at?: string | null;
       created_at?: string;
       updated_at?: string;
     };
@@ -37,9 +39,11 @@ export interface JobTables {
       board_token?: string;
       active?: boolean;
       last_synced_at?: string | null;
+      sync_requested_at?: string | null;
       created_at?: string;
       updated_at?: string;
     };
+    Relationships: [];
   };
   jobs: {
     Row: {
@@ -50,10 +54,12 @@ export interface JobTables {
       title: string;
       location: string | null;
       is_remote: boolean;
+      department: string | null;
       description_text: string | null;
       apply_url: string;
       posted_at: string | null;
       embedding: string | null;
+      raw: Json;
       is_open: boolean;
       last_seen_at: string;
       created_at: string;
@@ -67,10 +73,12 @@ export interface JobTables {
       title: string;
       location?: string | null;
       is_remote?: boolean;
+      department?: string | null;
       description_text?: string | null;
       apply_url: string;
       posted_at?: string | null;
       embedding?: string | null;
+      raw?: Json;
       is_open?: boolean;
       last_seen_at?: string;
       created_at?: string;
@@ -84,15 +92,18 @@ export interface JobTables {
       title?: string;
       location?: string | null;
       is_remote?: boolean;
+      department?: string | null;
       description_text?: string | null;
       apply_url?: string;
       posted_at?: string | null;
       embedding?: string | null;
+      raw?: Json;
       is_open?: boolean;
       last_seen_at?: string;
       created_at?: string;
       updated_at?: string;
     };
+    Relationships: [];
   };
   matches: {
     Row: {
@@ -125,6 +136,7 @@ export interface JobTables {
       created_at?: string;
       updated_at?: string;
     };
+    Relationships: [];
   };
   tailored_resumes: {
     Row: {
@@ -160,6 +172,7 @@ export interface JobTables {
       created_at?: string;
       updated_at?: string;
     };
+    Relationships: [];
   };
   applications: {
     Row: {
@@ -216,6 +229,7 @@ export interface JobTables {
       created_at?: string;
       updated_at?: string;
     };
+    Relationships: [];
   };
   emails: {
     Row: {
@@ -257,5 +271,6 @@ export interface JobTables {
       created_at?: string;
       updated_at?: string;
     };
+    Relationships: [];
   };
 }
