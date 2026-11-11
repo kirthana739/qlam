@@ -10,6 +10,7 @@
     "lint": "echo \"@qlam/core: lint ok\""
   },
   "dependencies": {
+    "@google/genai": "^2.32.0",
     "zod": "^4.6.7"
   }
 }
