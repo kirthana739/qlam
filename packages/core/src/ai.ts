@@ -7,13 +7,13 @@ export interface GenerateJSONParams<T extends z.ZodTypeAny> {
   schema: T;
 }
 
-const RETRY_DELAYS_MS = [1000, 3000, 8000]; // 3 attempts, waiting about 1s, 3s, 8s
+export const RETRY_DELAYS_MS = [1000, 3000, 8000]; // 3 attempts, waiting about 1s, 3s, 8s
 
 /**
  * Checks whether an error from Gemini is a 429 (Rate Limit) or 503 (Service Unavailable).
- * Only these two errors are retryable.
+ * Only these two errors are retryable. All other errors return false immediately.
  */
-function isRetryableGeminiError(error: unknown): boolean {
+export function isRetryableGeminiError(error: unknown): boolean {
   if (!error) return false;
 
   if (error instanceof ApiError) {
@@ -22,28 +22,44 @@ function isRetryableGeminiError(error: unknown): boolean {
 
   const err = error as Record<string, unknown>;
 
+  // Check numeric status codes (status, statusCode, response.status)
   const status =
     typeof err.status === "number"
       ? err.status
       : typeof err.statusCode === "number"
         ? err.statusCode
-        : typeof err.code === "number"
-          ? err.code
+        : typeof (err.response as Record<string, unknown> | undefined)?.status === "number"
+          ? ((err.response as Record<string, unknown>).status as number)
           : null;
 
-  if (status === 429 || status === 503) {
-    return true;
+  if (status !== null) {
+    return status === 429 || status === 503;
   }
 
-  if (
-    err.status === "429" ||
-    err.status === "503" ||
-    err.code === "429" ||
-    err.code === "503"
-  ) {
-    return true;
+  // Check string status or error codes
+  const code =
+    typeof err.code === "string" || typeof err.code === "number"
+      ? String(err.code)
+      : typeof err.status === "string"
+        ? err.status
+        : null;
+
+  if (code) {
+    if (
+      code === "429" ||
+      code === "503" ||
+      code === "RESOURCE_EXHAUSTED" ||
+      code === "UNAVAILABLE"
+    ) {
+      return true;
+    }
+    // Reject other common HTTP status codes immediately
+    if (["400", "401", "403", "404", "500"].includes(code)) {
+      return false;
+    }
   }
 
+  // Fallback to checking error message for 429 / 503 or standard error strings
   if (typeof err.message === "string") {
     const msg = err.message;
     if (
@@ -62,15 +78,18 @@ function isRetryableGeminiError(error: unknown): boolean {
  * Retries an asynchronous Gemini operation on 429 and 503 errors only with exponential backoff
  * (up to 3 attempts, waiting about 1s, 3s, 8s). Re-throws other errors immediately.
  */
-async function withGeminiRetry<T>(operation: () => Promise<T>): Promise<T> {
+export async function withGeminiRetry<T>(
+  operation: () => Promise<T>,
+  delays: number[] = RETRY_DELAYS_MS
+): Promise<T> {
   let attempt = 0;
 
   while (true) {
     try {
       return await operation();
     } catch (err) {
-      if (isRetryableGeminiError(err) && attempt < RETRY_DELAYS_MS.length) {
-        const delay = RETRY_DELAYS_MS[attempt] ?? 1000;
+      if (isRetryableGeminiError(err) && attempt < delays.length) {
+        const delay = delays[attempt] ?? 1000;
         attempt++;
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
@@ -126,7 +145,12 @@ export async function generateJSON<T extends z.ZodTypeAny>({
     }
 
     try {
-      const parsed = JSON.parse(text);
+      // Strip markdown code fences if model enclosed JSON in ```json ... ```
+      const cleaned = text
+        .trim()
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/\s*```$/i, "");
+      const parsed = JSON.parse(cleaned);
       const validationResult = schema.safeParse(parsed);
 
       if (validationResult.success) {
