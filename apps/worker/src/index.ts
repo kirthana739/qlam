@@ -60,6 +60,10 @@ async function main() {
   await boss.start();
   console.log("pg-boss started successfully.");
 
+  for (const queue of ["sync-jobs", "check-requested-syncs", "sync-company"]) {
+    await boss.createQueue(queue);
+  }
+
   // Schedule recurring sync every 6 hours
   await boss.schedule("sync-jobs", "0 */6 * * *");
   console.log("Registered cron schedule: sync-jobs (every 6 hours)");
@@ -128,3 +132,4 @@ main().catch((err) => {
   console.error("Fatal worker error:", err);
   process.exit(1);
 });
+
