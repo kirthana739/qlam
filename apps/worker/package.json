@@ -13,7 +13,8 @@
   "dependencies": {
     "@qlam/core": "*",
     "@supabase/supabase-js": "^2.49.1",
-    "pg-boss": "^12.38.2"
+    "pg-boss": "^12.38.2",
+    "playwright": "^1.65.1"
   },
   "devDependencies": {
     "tsx": "^4.23.15"

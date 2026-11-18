@@ -8,6 +8,9 @@ export const SeniorityLevelSchema = z.enum([
 ]);
 export type SeniorityLevel = z.infer<typeof SeniorityLevelSchema>;
 
+export const TailoringStrengthSchema = z.enum(["light", "medium", "strong"]);
+export type TailoringStrength = z.infer<typeof TailoringStrengthSchema>;
+
 export const PreferencesSchema = z.object({
   roles: z.array(z.string()).default([]),
   locations: z.array(z.string()).default([]),
@@ -17,6 +20,8 @@ export const PreferencesSchema = z.object({
   companies_to_avoid: z.array(z.string()).default([]),
   excluded_companies: z.array(z.string()).default([]),
   min_match_score: z.number().int().min(0).max(100).default(70),
+  tailoring_strength: TailoringStrengthSchema.default("medium"),
+  auto_approve_tailored: z.boolean().default(false),
 });
 
 export type Preferences = z.infer<typeof PreferencesSchema>;

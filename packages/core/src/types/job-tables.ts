@@ -147,6 +147,9 @@ export type JobTables = {
       content: Json;
       pdf_path: string | null;
       approved: boolean;
+      cover_letter: string | null;
+      truth_check_ok: boolean;
+      tailoring_strength: string;
       created_at: string;
       updated_at: string;
     };
@@ -158,6 +161,9 @@ export type JobTables = {
       content?: Json;
       pdf_path?: string | null;
       approved?: boolean;
+      cover_letter?: string | null;
+      truth_check_ok?: boolean;
+      tailoring_strength?: string;
       created_at?: string;
       updated_at?: string;
     };
@@ -169,6 +175,9 @@ export type JobTables = {
       content?: Json;
       pdf_path?: string | null;
       approved?: boolean;
+      cover_letter?: string | null;
+      truth_check_ok?: boolean;
+      tailoring_strength?: string;
       created_at?: string;
       updated_at?: string;
     };

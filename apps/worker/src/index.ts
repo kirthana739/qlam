@@ -3,6 +3,7 @@ import { PgBoss, type Job } from "pg-boss";
 import { getServiceClient } from "./utils/supabase.js";
 import { syncCompany } from "./sync/sync-company.js";
 import { runMatchUser } from "./matching/match-user.js";
+import { runTailorJob, type TailorJobData } from "./tailoring/tailor-job.js";
 
 // Attempt to load .env using Node 22 built-in if not already populated
 try {
@@ -106,6 +107,7 @@ async function main() {
     "match-users-daily",
     "check-requested-matches",
     "match-user",
+    "tailor-job",
   ];
 
   for (const queue of queues) {
@@ -218,6 +220,24 @@ async function main() {
           );
         } catch (err) {
           console.error(`Error running match-user for ${userId}:`, err);
+          throw err;
+        }
+      }
+    }
+  );
+
+  // Worker for resume tailoring + PDF generation (localConcurrency 2 – Chromium is heavy)
+  await boss.work(
+    "tailor-job",
+    { localConcurrency: 2, batchSize: 1 },
+    async (jobs: Job<TailorJobData>[]) => {
+      for (const job of jobs) {
+        const { userId, jobId, matchId } = job.data;
+        console.log(`Running tailor-job for user ${userId} / job ${jobId}...`);
+        try {
+          await runTailorJob({ userId, jobId, matchId });
+        } catch (err) {
+          console.error(`Error in tailor-job for user ${userId} / job ${jobId}:`, err);
           throw err;
         }
       }
