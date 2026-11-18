@@ -19,6 +19,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { SkipReasonDialog } from "./skip-reason-dialog";
+import { ApplyStatusBadge, type ApplicationStatusInfo } from "./apply-status-badge";
 
 export interface JobMatchItem {
   id: string;
@@ -48,16 +49,22 @@ export interface JobMatchItem {
 
 interface JobCardProps {
   match: JobMatchItem;
+  application?: ApplicationStatusInfo | null;
+  onApply?: (jobId: string, matchId: string) => Promise<void> | void;
   onSave?: (matchId: string) => Promise<void> | void;
   onSkip?: (matchId: string, reason?: string) => Promise<void> | void;
+  isApplying?: boolean;
   isSaving?: boolean;
   isSkipping?: boolean;
 }
 
 export function JobCard({
   match,
+  application,
+  onApply,
   onSave,
   onSkip,
+  isApplying = false,
   isSaving = false,
   isSkipping = false,
 }: JobCardProps) {
@@ -75,26 +82,19 @@ export function JobCard({
   const fits = match.reasons?.fits || [];
   const gaps = match.reasons?.gaps || [];
   const dealbreakers = match.reasons?.dealbreakers || [];
-
   const firstFit = fits[0] || "Profile matches key role requirements.";
   const hasGaps = gaps.length > 0 || dealbreakers.length > 0;
   const isSaved = match.status === "saved";
 
   // Score badge color calculation: 80+ green, 60-79 amber, below 60 grey
   const getScoreBadgeStyles = (score: number) => {
-    if (score >= 80) {
-      return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-semibold";
-    }
-    if (score >= 60) {
-      return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 font-semibold";
-    }
+    if (score >= 80) return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-semibold";
+    if (score >= 60) return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 font-semibold";
     return "bg-muted text-muted-foreground border-border font-semibold";
   };
 
   const handleSkipConfirm = async (reason?: string) => {
-    if (onSkip) {
-      await onSkip(match.id, reason);
-    }
+    if (onSkip) await onSkip(match.id, reason);
     setSkipDialogOpen(false);
   };
 
@@ -196,9 +196,7 @@ export function JobCard({
                         <AlertTriangle className="h-3 w-3" /> Dealbreakers
                       </span>
                       <ul className="list-disc list-inside text-xs text-destructive space-y-0.5 pl-1">
-                        {dealbreakers.map((db, idx) => (
-                          <li key={idx}>{db}</li>
-                        ))}
+                        {dealbreakers.map((db, idx) => <li key={idx}>{db}</li>)}
                       </ul>
                     </div>
                   )}
@@ -274,6 +272,14 @@ export function JobCard({
                   <ExternalLink className="h-3.5 w-3.5" />
                 </a>
               </Button>
+
+              {/* Apply Button & Live Application Status */}
+              <ApplyStatusBadge
+                application={application}
+                matchStatus={match.status}
+                isApplying={isApplying}
+                onApply={() => onApply?.(match.job_id, match.id)}
+              />
             </div>
           </div>
         </CardContent>

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Greenhouse Test with CAPTCHA</title>
+</head>
+<body>
+  <h1>Job Application</h1>
+  <form id="application_form">
+    <div class="field">
+      <label for="first_name">First Name</label>
+      <input type="text" id="first_name" name="job_application[first_name]">
+    </div>
+    <!-- Simulated Cloudflare / reCAPTCHA iframe -->
+    <div class="g-recaptcha" data-sitekey="dummy-key">
+      <iframe src="https://www.google.com/recaptcha/api2/anchor" style="width: 300px; height: 80px;"></iframe>
+    </div>
+  </form>
+</body>
+</html>

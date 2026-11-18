@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Greenhouse Test Missing Required Question</title>
+</head>
+<body>
+  <h1>Job Application</h1>
+  <form id="application_form">
+    <div class="field">
+      <label for="first_name">First Name <span class="asterisk">*</span></label>
+      <input type="text" id="first_name" name="job_application[first_name]" required>
+    </div>
+    <div class="field">
+      <label for="unknown_custom">What is your favorite obscure programming language? <span class="asterisk">*</span></label>
+      <input type="text" id="unknown_custom" name="job_application[custom]" required>
+    </div>
+  </form>
+</body>
+</html>

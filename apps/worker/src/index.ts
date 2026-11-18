@@ -4,6 +4,9 @@ import { getServiceClient } from "./utils/supabase.js";
 import { syncCompany } from "./sync/sync-company.js";
 import { runMatchUser } from "./matching/match-user.js";
 import { runTailorJob, type TailorJobData } from "./tailoring/tailor-job.js";
+import { runApplyJob } from "./apply/apply-job.js";
+import { checkQueuedApplications } from "./apply/dispatcher.js";
+import type { ApplyJobData } from "./apply/types.js";
 
 // Attempt to load .env using Node 22 built-in if not already populated
 try {
@@ -108,25 +111,27 @@ async function main() {
     "check-requested-matches",
     "match-user",
     "tailor-job",
+    "apply",
+    "check-queued-applications",
   ];
 
   for (const queue of queues) {
     await boss.createQueue(queue);
   }
 
-  // 1. Schedule recurring company sync every 6 hours
+  // Cron schedules
   await boss.schedule("sync-jobs", "0 */6 * * *");
-  console.log("Registered cron schedule: sync-jobs (every 6 hours)");
-
-  // 2. Schedule on-demand company sync check every minute
   await boss.schedule("check-requested-syncs", "* * * * *");
-
-  // 3. Schedule daily user matching at 2:00 AM UTC
   await boss.schedule("match-users-daily", "0 2 * * *");
-  console.log("Registered cron schedule: match-users-daily (daily at 2:00 AM UTC)");
-
-  // 4. Schedule on-demand match check every minute (after profile/preferences edit)
   await boss.schedule("check-requested-matches", "* * * * *");
+  await boss.schedule("check-queued-applications", "* * * * *");
+
+  // Also run fast polling interval (every 5 seconds) for snappy UX
+  const queuedAppsInterval = setInterval(() => {
+    checkQueuedApplications(boss).catch((err) => {
+      console.error("Fast polling checkQueuedApplications failed:", err);
+    });
+  }, 5000);
 
   // Worker for sync-jobs: enqueues sync-company for each active company
   await boss.work("sync-jobs", async () => {
@@ -244,9 +249,34 @@ async function main() {
     }
   );
 
+  // Worker for check-queued-applications
+  await boss.work("check-queued-applications", async () => {
+    await checkQueuedApplications(boss);
+  });
+
+  // Worker for apply job (localConcurrency 2 - Playwright browser automation)
+  await boss.work(
+    "apply",
+    { localConcurrency: 2, batchSize: 1 },
+    async (jobs: Job<ApplyJobData>[]) => {
+      for (const job of jobs) {
+        const { applicationId } = job.data;
+        console.log(`Running apply job for application ${applicationId}...`);
+        try {
+          await runApplyJob(job.data);
+          console.log(`Apply job completed for application ${applicationId}.`);
+        } catch (err) {
+          console.error(`Error in apply job for application ${applicationId}:`, err);
+          throw err;
+        }
+      }
+    }
+  );
+
   // Graceful shutdown handlers
   const shutdown = async () => {
     console.log("Stopping worker gracefully...");
+    clearInterval(queuedAppsInterval);
     await boss.stop({ graceful: true });
     process.exit(0);
   };

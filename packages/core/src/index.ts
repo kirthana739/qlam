@@ -21,6 +21,7 @@ export * from "./prompts/parseResume.js";
 export * from "./prompts/scoreMatch.js";
 export * from "./prompts/tailorResume.js";
 export * from "./prompts/coverLetter.js";
+export * from "./prompts/answerQuestion.js";
 export * from "./truthCheck.js";
 export * from "./pdf.js";
 export { z } from "zod";

@@ -161,3 +161,34 @@ export type AnswerItem = z.infer<typeof AnswerItemSchema>;
 
 export const CommonAnswersMapSchema = z.record(z.string(), z.string());
 export type CommonAnswersMap = z.infer<typeof CommonAnswersMapSchema>;
+
+export const QuestionToAskSchema = z.object({
+  key: z.string().min(1),
+  text: z.string().min(1),
+  type: z.enum([
+    "text",
+    "email",
+    "tel",
+    "url",
+    "textarea",
+    "select",
+    "file",
+    "checkbox",
+    "radio",
+    "other",
+  ]),
+  required: z.boolean(),
+  options: z.array(z.string()).optional(),
+  selector: z.string().optional(),
+});
+export type QuestionToAsk = z.infer<typeof QuestionToAskSchema>;
+
+export const AnswerResolutionResultSchema = z.object({
+  answer: z.string().nullable(),
+  confidence: z.number().min(0).max(1),
+  source: z.enum(["bank", "profile", "ai", "none"]),
+  usedFacts: z.array(z.string()).default([]),
+  isLegalOrEligibility: z.boolean().default(false),
+});
+export type AnswerResolutionResult = z.infer<typeof AnswerResolutionResultSchema>;
+

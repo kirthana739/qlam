@@ -199,6 +199,7 @@ export type JobTables = {
       screenshot_paths: string[];
       confirmation_text: string | null;
       submitted_at: string | null;
+      dry_run: boolean;
       created_at: string;
       updated_at: string;
     };
@@ -217,6 +218,7 @@ export type JobTables = {
       screenshot_paths?: string[];
       confirmation_text?: string | null;
       submitted_at?: string | null;
+      dry_run?: boolean;
       created_at?: string;
       updated_at?: string;
     };
@@ -235,6 +237,7 @@ export type JobTables = {
       screenshot_paths?: string[];
       confirmation_text?: string | null;
       submitted_at?: string | null;
+      dry_run?: boolean;
       created_at?: string;
       updated_at?: string;
     };

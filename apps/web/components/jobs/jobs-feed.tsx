@@ -1,28 +1,33 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { JobCard, type JobMatchItem } from "./job-card";
+import { type ApplicationStatusInfo } from "./apply-status-badge";
 import { JobsFilterBar, type PostedWithinOption } from "./jobs-filter-bar";
+import { ProfileIncompleteNotice, NoMatchesFound } from "./jobs-feed-empty-states";
+import { useFilteredMatches } from "./use-job-filters";
+import { useMatchActions } from "./use-match-actions";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Briefcase, Loader2, Sparkles, FilterX, AlertCircle } from "lucide-react";
+import { Briefcase, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import Link from "next/link";
 
 export function JobsFeed() {
   const supabase = createClient();
 
   const [matches, setMatches] = useState<JobMatchItem[]>([]);
+  const [appsByJobId, setAppsByJobId] = useState<Record<string, ApplicationStatusInfo>>({});
   const [loading, setLoading] = useState(true);
   const [isMatching, setIsMatching] = useState(false);
+  const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
   const [minScore, setMinScore] = useState<number>(0);
   const [remoteOnly, setRemoteOnly] = useState<boolean>(false);
   const [postedWithin, setPostedWithin] = useState<PostedWithinOption>("all");
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [profileIncomplete, setProfileIncomplete] = useState(false);
-  const [savingId, setSavingId] = useState<string | null>(null);
-  const [skippingId, setSkippingId] = useState<string | null>(null);
+  const { savingId, skippingId, handleSaveMatch, handleSkipMatch } = useMatchActions({
+    setMatches,
+  });
 
   // 1. Fetch matches from Supabase
   const loadMatches = useCallback(async () => {
@@ -80,6 +85,20 @@ export function JobsFeed() {
       }
 
       setMatches((data as unknown as JobMatchItem[]) || []);
+
+      // Fetch applications
+      const { data: appsData } = await supabase
+        .from("applications")
+        .select("id, job_id, run_status, dry_run, needs_user_reason, error")
+        .eq("user_id", user.id);
+
+      if (appsData) {
+        const appMap: Record<string, ApplicationStatusInfo> = {};
+        for (const app of appsData) {
+          appMap[app.job_id] = app as ApplicationStatusInfo;
+        }
+        setAppsByJobId(appMap);
+      }
     } catch (err) {
       console.error("Failed to load matches:", err);
       toast.error("Unexpected error loading matches.");
@@ -91,6 +110,20 @@ export function JobsFeed() {
   useEffect(() => {
     loadMatches();
   }, [loadMatches]);
+
+  // Polling for live status while an application is queued or running
+  useEffect(() => {
+    const hasActiveApp = Object.values(appsByJobId).some(
+      (a) => a.run_status === "queued" || a.run_status === "running"
+    );
+    if (!hasActiveApp) return;
+
+    const interval = setInterval(() => {
+      loadMatches();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [appsByJobId, loadMatches]);
 
   // 2. Trigger /api/match to run profile embedding and scoring
   const handleFindMatches = async () => {
@@ -128,82 +161,36 @@ export function JobsFeed() {
     }
   };
 
-  // 3. Save match action
-  const handleSaveMatch = async (matchId: string) => {
-    setSavingId(matchId);
+  // Apply action
+  const handleApply = async (jobId: string, matchId: string) => {
+    setApplyingJobId(jobId);
     try {
-      const res = await fetch(`/api/match/${matchId}`, {
-        method: "PATCH",
+      const res = await fetch("/api/apply", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "saved" }),
+        body: JSON.stringify({ jobId, matchId }),
       });
-
+      const data = await res.json();
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to save job.");
+        throw new Error(data.error || "Failed to enqueue application.");
       }
-
-      setMatches((prev) =>
-        prev.map((m) => (m.id === matchId ? { ...m, status: "saved" } : m))
-      );
-      toast.success("Job saved to your shortlist!");
+      toast.success("Application enqueued! AI agent is tailoring resume and applying...");
+      await loadMatches();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to save job.";
-      toast.error(message);
+      toast.error(err instanceof Error ? err.message : "Error applying.");
     } finally {
-      setSavingId(null);
-    }
-  };
-
-  // 4. Skip match action
-  const handleSkipMatch = async (matchId: string, reason?: string) => {
-    setSkippingId(matchId);
-    try {
-      const res = await fetch(`/api/match/${matchId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "skipped", skip_reason: reason }),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to skip job.");
-      }
-
-      // Remove skipped item from current view
-      setMatches((prev) => prev.filter((m) => m.id !== matchId));
-      toast.success("Job skipped.");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to skip job.";
-      toast.error(message);
-    } finally {
-      setSkippingId(null);
+      setApplyingJobId(null);
     }
   };
 
   // 5. Filter and sort matches
-  const filteredAndSortedMatches = useMemo(() => {
-    const now = Date.now();
-    return matches
-      .filter((item) => {
-        if (item.score < minScore) return false;
-        if (remoteOnly && !item.jobs?.is_remote) return false;
-
-        if (postedWithin !== "all") {
-          const postedAtStr = item.jobs?.posted_at;
-          if (postedAtStr) {
-            const ageDays = (now - new Date(postedAtStr).getTime()) / (1000 * 60 * 60 * 24);
-            if (postedWithin === "7d" && ageDays > 7) return false;
-            if (postedWithin === "30d" && ageDays > 30) return false;
-          }
-        }
-
-        return true;
-      })
-      .sort((a, b) => {
-        return sortOrder === "desc" ? b.score - a.score : a.score - b.score;
-      });
-  }, [matches, minScore, remoteOnly, postedWithin, sortOrder]);
+  const filteredAndSortedMatches = useFilteredMatches({
+    matches,
+    minScore,
+    remoteOnly,
+    postedWithin,
+    sortOrder,
+  });
 
   if (loading) {
     return (
@@ -218,19 +205,10 @@ export function JobsFeed() {
     <div className="space-y-6">
       {/* Optional banner if profile needs completion */}
       {profileIncomplete && (
-        <Card className="border-amber-500/30 bg-amber-500/5">
-          <CardContent className="p-4 flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-2.5 text-xs text-foreground">
-              <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
-              <span>
-                To get the most accurate matches, complete your target roles and upload your resume.
-              </span>
-            </div>
-            <Button asChild size="sm" variant="outline" className="h-7 text-xs">
-              <Link href="/app/profile">Complete Profile</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <ProfileIncompleteNotice
+          isMatching={isMatching}
+          onFindMatches={handleFindMatches}
+        />
       )}
 
       {/* Filter and matching control bar */}
@@ -281,37 +259,24 @@ export function JobsFeed() {
           </Button>
         </div>
       ) : filteredAndSortedMatches.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border p-8 text-center space-y-3 bg-muted/10">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <FilterX className="h-5 w-5" />
-          </div>
-          <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-foreground">No jobs match your filters</h3>
-            <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-              Try lowering the minimum match score or clearing the remote/date filters.
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setMinScore(0);
-              setRemoteOnly(false);
-              setPostedWithin("all");
-            }}
-            className="text-xs h-8"
-          >
-            Reset Filters
-          </Button>
-        </div>
+        <NoMatchesFound
+          onResetFilters={() => {
+            setMinScore(0);
+            setRemoteOnly(false);
+            setPostedWithin("all");
+          }}
+        />
       ) : (
         <div className="space-y-3.5">
           {filteredAndSortedMatches.map((item) => (
             <JobCard
               key={item.id}
               match={item}
+              application={appsByJobId[item.job_id]}
+              onApply={handleApply}
               onSave={handleSaveMatch}
               onSkip={handleSkipMatch}
+              isApplying={applyingJobId === item.job_id}
               isSaving={savingId === item.id}
               isSkipping={skippingId === item.id}
             />

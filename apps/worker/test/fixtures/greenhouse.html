@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Greenhouse Test Job Application</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    .field { margin-bottom: 12px; }
+    label { display: block; font-weight: bold; margin-bottom: 4px; }
+    .asterisk { color: red; }
+    #application_confirmation { display: none; padding: 20px; background: #e6ffed; border: 1px solid #34d058; }
+  </style>
+</head>
+<body>
+  <h1>Apply for Senior Full-Stack Engineer at Acme Corp</h1>
+
+  <form id="application_form" action="/apply" method="POST" enctype="multipart/form-data" onsubmit="event.preventDefault(); document.getElementById('application_form').style.display='none'; document.getElementById('application_confirmation').style.display='block';">
+    <div class="field">
+      <label for="first_name">First Name <span class="asterisk">*</span></label>
+      <input type="text" id="first_name" name="job_application[first_name]" required autocomplete="given-name">
+    </div>
+
+    <div class="field">
+      <label for="last_name">Last Name <span class="asterisk">*</span></label>
+      <input type="text" id="last_name" name="job_application[last_name]" required autocomplete="family-name">
+    </div>
+
+    <div class="field">
+      <label for="email">Email <span class="asterisk">*</span></label>
+      <input type="email" id="email" name="job_application[email]" required autocomplete="email">
+    </div>
+
+    <div class="field">
+      <label for="phone">Phone <span class="asterisk">*</span></label>
+      <input type="tel" id="phone" name="job_application[phone]" required autocomplete="tel">
+    </div>
+
+    <div class="field">
+      <label for="job_application_location">Location (City) <span class="asterisk">*</span></label>
+      <input type="text" id="job_application_location" name="job_application[location]" required>
+    </div>
+
+    <div class="field">
+      <label for="linkedin_url">LinkedIn Profile</label>
+      <input type="url" id="linkedin_url" name="job_application[answers_attributes][0][text_value]">
+    </div>
+
+    <div class="field">
+      <label for="resume">Resume/CV <span class="asterisk">*</span></label>
+      <input type="file" id="resume" name="job_application[resume]" required>
+    </div>
+
+    <div class="field">
+      <label for="work_auth">Are you legally authorized to work in the United States? <span class="asterisk">*</span></label>
+      <select id="work_auth" name="job_application[answers_attributes][1][text_value]" required>
+        <option value="">-- Please select --</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="sponsorship">Will you now or in the future require sponsorship for employment visa status? <span class="asterisk">*</span></label>
+      <select id="sponsorship" name="job_application[answers_attributes][2][text_value]" required>
+        <option value="">-- Please select --</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="years_exp">How many years of experience do you have with TypeScript?</label>
+      <input type="text" id="years_exp" name="job_application[answers_attributes][3][text_value]">
+    </div>
+
+    <div class="field">
+      <input type="submit" id="submit_app" value="Submit Application">
+    </div>
+  </form>
+
+  <div id="application_confirmation">
+    <h2>Thank you for applying!</h2>
+    <p>Your application has been received successfully.</p>
+  </div>
+</body>
+</html>

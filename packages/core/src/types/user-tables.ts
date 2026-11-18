@@ -106,6 +106,7 @@ export type UserTables = {
       question_text: string;
       answer: string;
       source: AnswerSource;
+      embedding: string | null;
       created_at: string;
       updated_at: string;
     };
@@ -116,6 +117,7 @@ export type UserTables = {
       question_text: string;
       answer: string;
       source?: AnswerSource;
+      embedding?: string | null;
       created_at?: string;
       updated_at?: string;
     };
@@ -126,6 +128,7 @@ export type UserTables = {
       question_text?: string;
       answer?: string;
       source?: AnswerSource;
+      embedding?: string | null;
       created_at?: string;
       updated_at?: string;
     };

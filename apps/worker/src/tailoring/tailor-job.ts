@@ -12,7 +12,8 @@ import { renderResumePdf } from "./pdf-renderer.js";
 export interface TailorJobData {
   userId: string;
   jobId: string;
-  matchId: string;
+  matchId?: string;
+  applicationId?: string;
 }
 
 /**
@@ -179,7 +180,7 @@ export async function runTailorJob(data: TailorJobData): Promise<void> {
   }
 
   // ---- 7. Upsert tailored_resumes ----
-  const { error: upsertError } = await supabase
+  const { data: upsertedResume, error: upsertError } = await supabase
     .from("tailored_resumes")
     .upsert(
       {
@@ -194,10 +195,28 @@ export async function runTailorJob(data: TailorJobData): Promise<void> {
         tailoring_strength: strength,
       },
       { onConflict: "user_id,job_id" }
-    );
+    )
+    .select("id")
+    .single();
 
   if (upsertError) {
     throw new Error(`[tailor-job] Failed to upsert tailored_resumes: ${upsertError.message}`);
+  }
+
+  // If this tailoring was triggered for an application, link the tailored_resume_id
+  if (data.applicationId && upsertedResume?.id) {
+    await supabase
+      .from("applications")
+      .update({ tailored_resume_id: upsertedResume.id })
+      .eq("id", data.applicationId);
+  } else if (upsertedResume?.id) {
+    // Also check for any queued application for this user and job
+    await supabase
+      .from("applications")
+      .update({ tailored_resume_id: upsertedResume.id })
+      .eq("user_id", userId)
+      .eq("job_id", jobId)
+      .eq("run_status", "queued");
   }
 
   // Note: match status is intentionally NOT changed here.
