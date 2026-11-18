@@ -114,6 +114,7 @@ export function StepPreferences({
 
   const handleSave = async () => {
     const payload: Preferences = {
+      ...initialPreferences,
       roles,
       locations,
       remote,
@@ -122,6 +123,8 @@ export function StepPreferences({
       companies_to_avoid: avoidCompanies,
       excluded_companies: avoidCompanies,
       min_match_score: minMatchScore,
+      tailoring_strength: initialPreferences.tailoring_strength ?? "medium",
+      auto_approve_tailored: initialPreferences.auto_approve_tailored ?? false,
     };
 
     const validation = PreferencesSchema.safeParse(payload);
