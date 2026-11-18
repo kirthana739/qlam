@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { ResumeDataSchema, type ResumeData, type Json } from "@qlam/core";
 
 /**
  * Approve a tailored resume: sets approved = true.
@@ -72,3 +73,36 @@ export async function useOriginalResume(tailoredId: string): Promise<{ error?: s
   revalidatePath(`/app/review/${tailoredId}`);
   return {};
 }
+
+/**
+ * Edit and save updated tailored resume content.
+ */
+export async function updateTailoredResume(
+  tailoredId: string,
+  content: ResumeData
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+
+  const parsed = ResumeDataSchema.safeParse(content);
+  if (!parsed.success) {
+    return { error: "Invalid resume format: " + parsed.error.issues[0]?.message };
+  }
+
+  const { error } = await supabase
+    .from("tailored_resumes")
+    .update({
+      content: parsed.data as unknown as Json,
+      pdf_path: null,
+    })
+    .eq("id", tailoredId)
+    .eq("user_id", user.id);
+
+  if (error) return { error: error.message };
+  revalidatePath(`/app/review/${tailoredId}`);
+  return {};
+}
+
