@@ -122,6 +122,7 @@ export default function ProfilePage() {
         phone: updated.basics.phone || null,
         city: updated.basics.location?.city || null,
         links: updated.basics.links || [],
+        match_requested_at: new Date().toISOString(),
       })
       .eq("user_id", userId);
 
@@ -180,6 +181,7 @@ export default function ProfilePage() {
         needs_sponsorship: updatedAnswers[QUESTION_KEYS.SPONSORSHIP]?.toLowerCase() === "yes",
         notice_period_days: noticePeriodDays,
         expected_salary: updatedAnswers[QUESTION_KEYS.EXPECTED_SALARY] || null,
+        match_requested_at: new Date().toISOString(),
       })
       .eq("user_id", userId);
   };
@@ -193,6 +195,7 @@ export default function ProfilePage() {
       .from("profiles")
       .update({
         preferences: updatedPrefs,
+        match_requested_at: new Date().toISOString(),
       })
       .eq("user_id", userId);
 
@@ -201,9 +204,17 @@ export default function ProfilePage() {
     }
   };
 
-  const handleNewResumeUploaded = (data: { resumeId: string; parsed: ResumeData }) => {
+  const handleNewResumeUploaded = async (data: { resumeId: string; parsed: ResumeData }) => {
     setResumeId(data.resumeId);
     setResumeData(data.parsed);
+    if (userId) {
+      await supabase
+        .from("profiles")
+        .update({
+          match_requested_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId);
+    }
     toast.success("New resume uploaded and parsed successfully!");
     setActiveTab("profile");
   };

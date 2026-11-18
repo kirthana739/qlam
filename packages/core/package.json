@@ -7,7 +7,8 @@
   "types": "./src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "lint": "echo \"@qlam/core: lint ok\""
+    "lint": "echo \"@qlam/core: lint ok\"",
+    "test": "node --experimental-strip-types --test tests/ai.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.32.0",

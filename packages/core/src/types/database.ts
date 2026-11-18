@@ -28,6 +28,39 @@ export type Database = {
         Args: Record<string, never>;
         Returns: string;
       };
+      get_daily_scoring_count: {
+        Args: {
+          p_user_id: string;
+        };
+        Returns: number;
+      };
+      increment_daily_scoring: {
+        Args: {
+          p_user_id: string;
+          p_increment?: number;
+        };
+        Returns: number;
+      };
+      match_jobs: {
+        Args: {
+          p_user_id: string;
+          p_limit?: number;
+        };
+        Returns: {
+          id: string;
+          company_id: string;
+          company_name: string;
+          ats: AtsType;
+          title: string;
+          location: string | null;
+          is_remote: boolean;
+          department: string | null;
+          description_text: string | null;
+          apply_url: string;
+          posted_at: string | null;
+          similarity: number;
+        }[];
+      };
     };
     Enums: {
       ats_type: AtsType;

@@ -18,4 +18,5 @@ export * from "./database.types.js";
 export * from "./schemas/index.js";
 export * from "./ai.js";
 export * from "./prompts/parseResume.js";
+export * from "./prompts/scoreMatch.js";
 export { z } from "zod";

@@ -7,7 +7,8 @@ export interface GenerateJSONParams<T extends z.ZodTypeAny> {
   schema: T;
 }
 
-export const RETRY_DELAYS_MS = [1000, 3000, 8000]; // 3 attempts, waiting about 1s, 3s, 8s
+export const RETRY_DELAYS_MS = [2000, 5000, 10000]; // 3 attempts, waiting 2s, 5s, 10s
+export const AI_BUSY_MESSAGE = "AI is busy, try again";
 
 /**
  * Checks whether an error from Gemini is a 429 (Rate Limit) or 503 (Service Unavailable).
@@ -17,7 +18,9 @@ export function isRetryableGeminiError(error: unknown): boolean {
   if (!error) return false;
 
   if (error instanceof ApiError) {
-    return error.status === 429 || error.status === 503;
+    if (error.status === 429 || error.status === 503) {
+      return true;
+    }
   }
 
   const err = error as Record<string, unknown>;
@@ -32,8 +35,8 @@ export function isRetryableGeminiError(error: unknown): boolean {
           ? ((err.response as Record<string, unknown>).status as number)
           : null;
 
-  if (status !== null) {
-    return status === 429 || status === 503;
+  if (status === 429 || status === 503) {
+    return true;
   }
 
   // Check string status or error codes
@@ -53,7 +56,7 @@ export function isRetryableGeminiError(error: unknown): boolean {
     ) {
       return true;
     }
-    // Reject other common HTTP status codes immediately
+    // Reject other common HTTP client/server status codes immediately
     if (["400", "401", "403", "404", "500"].includes(code)) {
       return false;
     }
@@ -61,11 +64,16 @@ export function isRetryableGeminiError(error: unknown): boolean {
 
   // Fallback to checking error message for 429 / 503 or standard error strings
   if (typeof err.message === "string") {
-    const msg = err.message;
+    const msg = err.message.toLowerCase();
     if (
       /\b(429|503)\b/.test(msg) ||
-      msg.includes("RESOURCE_EXHAUSTED") ||
-      msg.includes("UNAVAILABLE")
+      msg.includes("resource_exhausted") ||
+      msg.includes("unavailable") ||
+      msg.includes("high demand") ||
+      msg.includes("overloaded") ||
+      msg.includes("rate limit") ||
+      msg.includes("service unavailable") ||
+      msg.includes("too many requests")
     ) {
       return true;
     }
@@ -76,7 +84,9 @@ export function isRetryableGeminiError(error: unknown): boolean {
 
 /**
  * Retries an asynchronous Gemini operation on 429 and 503 errors only with exponential backoff
- * (up to 3 attempts, waiting about 1s, 3s, 8s). Re-throws other errors immediately.
+ * (3 attempts, waiting 2s, 5s, 10s).
+ * If all retries fail, throws a friendly message instead of the raw JSON error.
+ * Re-throws other non-retryable errors immediately.
  */
 export async function withGeminiRetry<T>(
   operation: () => Promise<T>,
@@ -88,11 +98,15 @@ export async function withGeminiRetry<T>(
     try {
       return await operation();
     } catch (err) {
-      if (isRetryableGeminiError(err) && attempt < delays.length) {
-        const delay = delays[attempt] ?? 1000;
-        attempt++;
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        continue;
+      if (isRetryableGeminiError(err)) {
+        if (attempt < delays.length) {
+          const delay = delays[attempt] ?? 2000;
+          attempt++;
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue;
+        }
+        // All retries failed
+        throw new Error(AI_BUSY_MESSAGE);
       }
       throw err;
     }
@@ -125,7 +139,7 @@ export async function generateJSON<T extends z.ZodTypeAny>({
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt < 2; attempt++) {
-    // API call with 429/503 retry
+    // API call with 429/503 retry and backoff
     const response = await withGeminiRetry(() =>
       ai.models.generateContent({
         model,

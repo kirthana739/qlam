@@ -18,8 +18,11 @@ export type UserTables = {
       notice_period_days: number | null;
       expected_salary: string | null;
       preferences: Json;
+      embedding: string | null;
       inbox_alias: string;
       onboarding_done: boolean;
+      match_requested_at: string | null;
+      last_matched_at: string | null;
       created_at: string;
       updated_at: string;
     };
@@ -35,8 +38,11 @@ export type UserTables = {
       notice_period_days?: number | null;
       expected_salary?: string | null;
       preferences?: Json;
+      embedding?: string | null;
       inbox_alias: string;
       onboarding_done?: boolean;
+      match_requested_at?: string | null;
+      last_matched_at?: string | null;
       created_at?: string;
       updated_at?: string;
     };
@@ -52,8 +58,11 @@ export type UserTables = {
       notice_period_days?: number | null;
       expected_salary?: string | null;
       preferences?: Json;
+      embedding?: string | null;
       inbox_alias?: string;
       onboarding_done?: boolean;
+      match_requested_at?: string | null;
+      last_matched_at?: string | null;
       created_at?: string;
       updated_at?: string;
     };
@@ -182,6 +191,30 @@ export type UserTables = {
       type?: string;
       data?: Json;
       created_at?: string;
+    };
+    Relationships: [];
+  };
+  daily_scoring_usage: {
+    Row: {
+      user_id: string;
+      usage_date: string;
+      count: number;
+      created_at: string;
+      updated_at: string;
+    };
+    Insert: {
+      user_id: string;
+      usage_date?: string;
+      count?: number;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Update: {
+      user_id?: string;
+      usage_date?: string;
+      count?: number;
+      created_at?: string;
+      updated_at?: string;
     };
     Relationships: [];
   };
