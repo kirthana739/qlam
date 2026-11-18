@@ -2,9 +2,16 @@ import fs from "node:fs";
 import { chromium, type Browser } from "playwright";
 import type { Json } from "@qlam/core";
 import { getServiceClient } from "../utils/supabase.js";
-import { applyGreenhouse } from "./handlers/greenhouse.js";
+import {
+  detectAtsSystem,
+  applyGreenhouse,
+  applyLever,
+  applyAshby,
+} from "./handlers/index.js";
 import { logApplyEvent } from "./logger.js";
 import { downloadTailoredPdf } from "./pdf-helper.js";
+import { recordApplicationResult } from "./result-recorder.js";
+import { buildProfileContext } from "./profile-helper.js";
 import type { CandidateProfileContext } from "./answerEngine.js";
 import type { ApplyJobData, ApplyResult } from "./types.js";
 
@@ -145,29 +152,25 @@ export async function runApplyJob(jobData: ApplyJobData): Promise<ApplyResult> {
         return storagePath;
       };
 
-      const runPromise = applyGreenhouse({
+      // Detect ATS system from apply URL
+      const atsDetection = detectAtsSystem(job.apply_url);
+      if (!atsDetection.isSupported || !atsDetection.ats) {
+        return {
+          success: false,
+          dryRun: true,
+          filledFields: {},
+          screenshotPaths: [],
+          needsUser: true,
+          needsUserReason:
+            atsDetection.reason ||
+            `Unsupported ATS URL or unknown job board domain "${atsDetection.hostname}".`,
+        };
+      }
+
+      const handlerOptions = {
         page,
         url: job.apply_url,
-        profile: {
-          name: profile.name,
-          phone: profile.phone,
-          city: profile.city,
-          links: profile.links as Record<string, string> | null,
-          work_authorization: profile.work_authorization,
-          needs_sponsorship: profile.needs_sponsorship,
-          notice_period_days: profile.notice_period_days,
-          expected_salary: profile.expected_salary,
-          preferences: profile.preferences as Record<string, unknown> | null,
-          skills: Array.isArray(parsedResume.skills) ? (parsedResume.skills as string[]) : undefined,
-          experience: Array.isArray(parsedResume.experience)
-            ? (parsedResume.experience as CandidateProfileContext["experience"])
-            : undefined,
-          education: Array.isArray(parsedResume.education)
-            ? (parsedResume.education as CandidateProfileContext["education"])
-            : undefined,
-          summary: typeof parsedResume.summary === "string" ? parsedResume.summary : undefined,
-          inbox_alias: profile.inbox_alias,
-        },
+        profile: buildProfileContext(profile, parsedResume),
         answers,
         job: {
           title: job.title,
@@ -177,7 +180,16 @@ export async function runApplyJob(jobData: ApplyJobData): Promise<ApplyResult> {
         },
         resumePdfPath: tempPdfPath || "",
         captureScreenshot,
-      });
+      };
+
+      let runPromise: Promise<ApplyResult>;
+      if (atsDetection.ats === "greenhouse") {
+        runPromise = applyGreenhouse(handlerOptions);
+      } else if (atsDetection.ats === "lever") {
+        runPromise = applyLever(handlerOptions);
+      } else {
+        runPromise = applyAshby(handlerOptions);
+      }
 
       result = await Promise.race([runPromise, timeoutPromise]);
       break; // Success or graceful stop (e.g. needs_user)
@@ -235,73 +247,11 @@ export async function runApplyJob(jobData: ApplyJobData): Promise<ApplyResult> {
     throw lastError || new Error("Apply job failed without result");
   }
 
-  // Handle Needs User (e.g. CAPTCHA or missing required questions)
-  if (result.needsUser) {
-    await supabase
-      .from("applications")
-      .update({
-        run_status: "needs_user",
-        needs_user_reason: result.needsUserReason || "User intervention required",
-        filled_fields: result.filledFields as unknown as Json,
-        screenshot_paths: result.screenshotPaths,
-      })
-      .eq("id", applicationId);
-
-    await logApplyEvent(userId, "apply_needs_user", {
-      application_id: applicationId,
-      reason: result.needsUserReason || "User intervention required",
-      unanswered_questions: result.unansweredQuestions || [],
-    });
-
-    return result;
-  }
-
-  // Handle Dry Run vs Live Submit
-  if (result.dryRun) {
-    // Dry-run: do NOT set matches.status to 'applied', do NOT set submitted_at.
-    await supabase
-      .from("applications")
-      .update({
-        run_status: "submitted",
-        dry_run: true,
-        confirmation_text: result.confirmationText,
-        filled_fields: result.filledFields as unknown as Json,
-        screenshot_paths: result.screenshotPaths,
-        error: null,
-      })
-      .eq("id", applicationId);
-
-    await logApplyEvent(userId, "apply_dry_run_completed", {
-      application_id: applicationId,
-      field_count: Object.keys(result.filledFields).length,
-    });
-  } else {
-    // Live submission
-    await supabase
-      .from("applications")
-      .update({
-        run_status: "submitted",
-        dry_run: false,
-        submitted_at: result.submittedAt || new Date().toISOString(),
-        confirmation_text: result.confirmationText,
-        filled_fields: result.filledFields as unknown as Json,
-        screenshot_paths: result.screenshotPaths,
-        error: null,
-      })
-      .eq("id", applicationId);
-
-    // Update matches row to applied
-    await supabase
-      .from("matches")
-      .update({ status: "applied" })
-      .eq("user_id", userId)
-      .eq("job_id", jobId);
-
-    await logApplyEvent(userId, "apply_live_submitted", {
-      application_id: applicationId,
-      confirmation_text: result.confirmationText,
-    });
-  }
-
-  return result;
+  return await recordApplicationResult(
+    supabase,
+    applicationId,
+    userId,
+    jobId,
+    result
+  );
 }

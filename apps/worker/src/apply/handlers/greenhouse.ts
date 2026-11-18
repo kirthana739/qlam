@@ -2,7 +2,7 @@ import type { Page } from "playwright";
 import type { QuestionToAsk } from "@qlam/core";
 import { readForm } from "../readForm.js";
 import { detectCaptcha } from "../captcha.js";
-import { fillIfPresent, selectIfPresent } from "./greenhouse-fields.js";
+import { fillIfPresent, selectIfPresent, isDryRun as checkIsDryRun } from "./common.js";
 import { resolveFieldAnswer, type BankAnswer } from "../answerEngine.js";
 import type { ApplyResult } from "../types.js";
 
@@ -60,9 +60,7 @@ export async function applyGreenhouse(
 ): Promise<ApplyResult> {
   const { page, url, profile, answers, resumePdfPath, captureScreenshot } = options;
 
-  const isDryRun =
-    process.env.DRY_RUN !== "false" ||
-    process.env.ALLOW_LIVE_SUBMIT !== "true";
+  const isDryRun = checkIsDryRun();
 
   const inboxDomain = process.env.QLAM_INBOX_DOMAIN || "mail.qlam.app";
   const inboxEmail = `${profile.inbox_alias}@${inboxDomain}`;

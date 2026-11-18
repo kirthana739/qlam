@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Lever Job Application - Missing Required</title>
+</head>
+<body>
+  <h1>Apply at Lever Partner Corp</h1>
+  <form id="application_form">
+    <label for="name">Full Name *</label>
+    <input type="text" id="name" name="name" required>
+
+    <label for="email">Email *</label>
+    <input type="email" id="email" name="email" required>
+
+    <label for="secret_unbanked_clearance">Do you possess an active Top Secret SCI Security Clearance? *</label>
+    <input type="text" id="secret_unbanked_clearance" name="cards[secret_clearance]" required>
+
+    <button type="submit" id="btn-submit">Submit application</button>
+  </form>
+</body>
+</html>

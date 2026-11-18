@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ashby Job Application Test</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    .field { margin-bottom: 12px; }
+    label { display: block; font-weight: bold; margin-bottom: 4px; }
+    .asterisk { color: red; }
+    #application_confirmation { display: none; padding: 20px; background: #e6ffed; border: 1px solid #34d058; }
+  </style>
+</head>
+<body>
+  <h1>Apply for Staff Infrastructure Engineer at Ashby Tech Inc</h1>
+
+  <form id="application_form" action="/apply" method="POST" enctype="multipart/form-data" onsubmit="event.preventDefault(); document.getElementById('application_form').style.display='none'; document.getElementById('application_confirmation').style.display='block';">
+    <div class="field">
+      <label for="_systemfield_name">Full Name <span class="asterisk">*</span></label>
+      <input type="text" id="_systemfield_name" name="_systemfield_name" required>
+    </div>
+
+    <div class="field">
+      <label for="_systemfield_email">Email <span class="asterisk">*</span></label>
+      <input type="email" id="_systemfield_email" name="_systemfield_email" required>
+    </div>
+
+    <div class="field">
+      <label for="_systemfield_phone">Phone <span class="asterisk">*</span></label>
+      <input type="tel" id="_systemfield_phone" name="_systemfield_phone" required>
+    </div>
+
+    <div class="field">
+      <label for="_systemfield_location">Location <span class="asterisk">*</span></label>
+      <input type="text" id="_systemfield_location" name="_systemfield_location" required>
+    </div>
+
+    <div class="field">
+      <label for="_systemfield_urls_LinkedIn">LinkedIn Profile</label>
+      <input type="url" id="_systemfield_urls_LinkedIn" name="_systemfield_urls_LinkedIn">
+    </div>
+
+    <div class="field">
+      <label for="_systemfield_urls_Website">Personal Website / Portfolio</label>
+      <input type="url" id="_systemfield_urls_Website" name="_systemfield_urls_Website">
+    </div>
+
+    <div class="field">
+      <label for="_systemfield_resume">Resume <span class="asterisk">*</span></label>
+      <input type="file" id="_systemfield_resume" name="_systemfield_resume" required>
+    </div>
+
+    <div class="field">
+      <label for="work_auth">Are you legally authorized to work in the United States? <span class="asterisk">*</span></label>
+      <select id="work_auth" name="custom_work_auth" required>
+        <option value="">-- Select an option --</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="ethnicity">Race / Ethnicity (Voluntary Self-Identification)</label>
+      <select id="ethnicity" name="custom_ethnicity">
+        <option value="">-- Select an option --</option>
+        <option value="Asian">Asian</option>
+        <option value="White">White</option>
+        <option value="Decline to self-identify">Decline to self-identify</option>
+      </select>
+    </div>
+
+    <div class="field" style="margin-top: 20px;">
+      <button type="submit" id="submit_app" data-qa="submit-button">Submit Application</button>
+    </div>
+  </form>
+
+  <div id="application_confirmation" class="ashby-application-success" data-qa="success-message">
+    <h2>Application submitted successfully.</h2>
+    <p>Thank you for your interest in Ashby Tech Inc.</p>
+  </div>
+</body>
+</html>

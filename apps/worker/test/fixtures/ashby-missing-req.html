@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ashby Job Application - Missing Required</title>
+</head>
+<body>
+  <h1>Apply at Ashby Tech Inc</h1>
+  <form id="application_form">
+    <label for="_systemfield_name">Full Name *</label>
+    <input type="text" id="_systemfield_name" name="_systemfield_name" required>
+
+    <label for="_systemfield_email">Email *</label>
+    <input type="email" id="_systemfield_email" name="_systemfield_email" required>
+
+    <label for="custom_patents">List the registration numbers of any patents you hold: *</label>
+    <input type="text" id="custom_patents" name="custom_patents" required>
+
+    <button type="submit" data-qa="submit-button">Submit Application</button>
+  </form>
+</body>
+</html>

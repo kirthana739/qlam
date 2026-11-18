@@ -12,6 +12,7 @@
     "test": "tsx --test test/*.test.ts"
   },
   "dependencies": {
+    "@browserbasehq/stagehand": "^4.4.0",
     "@qlam/core": "*",
     "@supabase/supabase-js": "^2.49.1",
     "pg-boss": "^12.38.2",
