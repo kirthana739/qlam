@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ResumeDiffCard } from "./resume-diff-card";
 import { EditResumeDialog } from "./edit-dialog";
-import { approveResume, useOriginalResume, updateTailoredResume } from "./actions";
+import { approveResume, restoreOriginalResume, updateTailoredResume } from "./actions";
 import { truthCheck, type ResumeData } from "@qlam/core";
 import {
   CheckCircle2,
@@ -70,7 +70,7 @@ export function ReviewClient({
 
   const handleUseOriginal = () => {
     startTransition(async () => {
-      const res = await useOriginalResume(tailoredId);
+      const res = await restoreOriginalResume(tailoredId);
       if (res.error) {
         toast.error(`Failed to restore base resume: ${res.error}`);
       } else {

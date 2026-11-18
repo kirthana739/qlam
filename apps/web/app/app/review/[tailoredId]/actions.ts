@@ -27,10 +27,10 @@ export async function approveResume(tailoredId: string): Promise<{ error?: strin
 }
 
 /**
- * Use original: replaces the tailored content with the base resume content
+ * Restore original: replaces the tailored content with the base resume content
  * and marks approved = true so the apply flow can proceed.
  */
-export async function useOriginalResume(tailoredId: string): Promise<{ error?: string }> {
+export async function restoreOriginalResume(tailoredId: string): Promise<{ error?: string }> {
   const supabase = await createClient();
   const {
     data: { user },
