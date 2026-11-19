@@ -6,11 +6,13 @@ Qlam is an AI job-application agent. Its edge is **match quality, not volume**: 
 
 ## Live demo
 
-**[Open Qlam](https://REPLACE-WITH-YOUR-VERCEL-LINK.vercel.app)**
+**[Open Qlam](https://qlam.onrender.com)**
 
+> The demo is hosted on a free plan, so the first load can take about 50 seconds while the server wakes up.
+>
 > Status: login, resume parsing, job matching and the jobs feed are live. The apply agent runs in **dry-run mode only** (it fills forms and takes screenshots but never submits) and is not part of the hosted demo, because it needs an always-on worker server.
 
-Sign in with Google. If sign-in is blocked, the account needs to be added as a test user.
+Sign in with Google. The app is in testing mode, so your Google account must be added as a test user. If sign-in is blocked, ask the project owner to add your email.
 
 ## What it does
 
@@ -58,7 +60,7 @@ Limits: at most 10 new jobs scored per request and 50 AI scoring calls per user 
 
 Known code first, AI only for what is new.
 
-- A fresh browser context per run, with timeouts and an overall 5-minute limit.
+- A fresh browser context per run, with per-action timeouts and an overall 5-minute limit.
 - Known fields (name, email, phone, links, resume upload) are filled by hand-written code per system (Greenhouse, Lever, Ashby).
 - Custom questions go through the **answer engine**: answers bank, then profile mapping, then AI from verified facts only, otherwise the user is asked.
 - **Legal and eligibility questions** (work authorization, sponsorship, criminal record, age, disability, gender, race, veteran) are never answered by AI. They come from the profile or the user.
@@ -85,7 +87,8 @@ Known code first, AI only for what is new.
 | Apply agent | Playwright (Stagehand as an optional element locator) |
 | AI | Gemini, behind one `ai.ts` file |
 | PDFs | HTML template rendered with Playwright |
-| Planned | Cloudflare Email Routing, Resend, Razorpay, Vercel, Railway |
+| Hosting (demo) | Render (web app) |
+| Planned | Cloudflare Email Routing, Resend, Razorpay, Railway (worker) |
 
 ## Project structure
 
@@ -121,6 +124,17 @@ npm run typecheck
 npm run lint
 npm test             # worker and core tests
 ```
+
+## Deploying the web app
+
+The demo runs on Render with these settings:
+
+- Root directory: empty (monorepo root)
+- Build command: `npm install && npm run build --workspace=apps/web`
+- Start command: `npm run start --workspace=apps/web`
+- Environment variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `GEMINI_API_KEY`, `GEMINI_FAST_MODEL`, `GEMINI_EMBED_MODEL`, `ADMIN_EMAILS`, `NODE_VERSION=22`
+- `NEXT_PUBLIC_` values are baked in at build time, so redeploy after changing them.
+- Add `https://<your-domain>/auth/callback` to the Redirect URLs in Supabase Authentication settings.
 
 ## Roadmap
 
