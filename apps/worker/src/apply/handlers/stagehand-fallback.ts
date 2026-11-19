@@ -59,32 +59,44 @@ export async function locateFieldWithStagehand(
 
   // 3. Lazy load Stagehand
   try {
-    const { Stagehand } = await import("@browserbasehq/stagehand");
+    const { Stagehand, localBrowser } = await import("@browserbasehq/stagehand");
 
     const modelName = process.env.STAGEHAND_MODEL || "gemini-2.0-flash";
-    const stagehand = new Stagehand({
-      env: "LOCAL",
-      modelName,
-    });
+    const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || "";
+    const provider = process.env.GEMINI_API_KEY ? "google" : "openai";
 
-    await stagehand.init();
+    const browser = await localBrowser.launch({ headless: true });
+    let stagehand: Awaited<ReturnType<typeof Stagehand.create>> | undefined;
+    try {
+      stagehand = await Stagehand.create({
+        browser,
+        model: {
+          modelName: `${provider}/${modelName}`,
+          apiKey,
+        },
+      });
 
-    // Use Stagehand observe to locate the element selector by plain-English instruction
-    const observations = await stagehand.page.observe({
-      instruction: `Find the interactive input or form control corresponding to the field "${field.label}".`,
-    });
+      // Use Stagehand observe to locate the element selector by plain-English instruction
+      const observeResult = await stagehand.observe(
+        `Find the interactive input or form control corresponding to the field "${field.label}".`
+      );
+      const observations = observeResult.data;
 
-    if (observations && observations.length > 0 && observations[0].selector) {
+      if (observations && observations.length > 0 && observations[0]?.selector) {
+        return {
+          success: true,
+          selector: observations[0].selector,
+        };
+      }
+
       return {
-        success: true,
-        selector: observations[0].selector,
+        success: false,
+        reason: `Stagehand observe did not find any matching control for field "${field.label}".`,
       };
+    } finally {
+      await stagehand?.close().catch(() => {});
+      await browser.close().catch(() => {});
     }
-
-    return {
-      success: false,
-      reason: `Stagehand observe did not find any matching control for field "${field.label}".`,
-    };
   } catch (err) {
     // If Stagehand fails to load or error occurs, end as needs_user gracefully
     return {

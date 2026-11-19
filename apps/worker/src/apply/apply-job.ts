@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import { chromium, type Browser } from "playwright";
-import type { Json } from "@qlam/core";
 import { getServiceClient } from "../utils/supabase.js";
 import {
   detectAtsSystem,
@@ -12,7 +11,6 @@ import { logApplyEvent } from "./logger.js";
 import { downloadTailoredPdf } from "./pdf-helper.js";
 import { recordApplicationResult } from "./result-recorder.js";
 import { buildProfileContext } from "./profile-helper.js";
-import type { CandidateProfileContext } from "./answerEngine.js";
 import type { ApplyJobData, ApplyResult } from "./types.js";
 
 /**
@@ -167,10 +165,11 @@ export async function runApplyJob(jobData: ApplyJobData): Promise<ApplyResult> {
         };
       }
 
+      const profileContext = buildProfileContext(profile, parsedResume);
       const handlerOptions = {
         page,
         url: job.apply_url,
-        profile: buildProfileContext(profile, parsedResume),
+        profile: { ...profileContext, inbox_alias: profileContext.inbox_alias ?? "" },
         answers,
         job: {
           title: job.title,

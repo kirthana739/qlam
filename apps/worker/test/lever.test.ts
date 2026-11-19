@@ -118,7 +118,7 @@ describe("Lever Apply Agent", () => {
           name: "Jane Developer",
           phone: "+15551234567",
           city: "San Francisco, CA",
-          work_authorization: "authorized",
+          work_authorization: "Yes",
           needs_sponsorship: false,
           inbox_alias: "jane.dev",
           experience: [{ company: "Acme Global", position: "Senior Engineer" }],
@@ -131,7 +131,6 @@ describe("Lever Apply Agent", () => {
         resumePdfPath: dummyPdfPath,
         captureScreenshot: mockCaptureScreenshot,
       });
-
       assert.equal(result.success, true);
       assert.equal(result.dryRun, true);
       assert.ok(result.confirmationText?.includes("[DRY RUN]"));
@@ -187,7 +186,7 @@ describe("Lever Apply Agent", () => {
           name: "John Doe",
           phone: "+15559876543",
           city: "New York, NY",
-          work_authorization: "authorized",
+          work_authorization: "Yes",
           needs_sponsorship: false,
           inbox_alias: "john.doe",
           experience: [{ company: "Tech Innovations" }],
@@ -283,7 +282,7 @@ describe("Lever Apply Agent", () => {
         profile: {
           name: "Fallback Candidate",
           inbox_alias: "fallback.cand",
-          work_authorization: "authorized",
+          work_authorization: "Yes",
         },
         answers: [],
         resumePdfPath: dummyPdfPath,

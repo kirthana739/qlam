@@ -121,7 +121,7 @@ describe("Ashby Apply Agent", () => {
           name: "Alex Cloud",
           phone: "+15554567890",
           city: "Seattle, WA",
-          work_authorization: "authorized",
+          work_authorization: "Yes",
           needs_sponsorship: false,
           inbox_alias: "alex.cloud",
           links: {
@@ -184,7 +184,7 @@ describe("Ashby Apply Agent", () => {
           name: "Morgan Taylor",
           phone: "+15550001122",
           city: "Austin, TX",
-          work_authorization: "authorized",
+          work_authorization: "Yes",
           needs_sponsorship: false,
           inbox_alias: "morgan.taylor",
         },
@@ -278,7 +278,7 @@ describe("Ashby Apply Agent", () => {
         profile: {
           name: "Fallback Candidate",
           inbox_alias: "fallback.cand",
-          work_authorization: "authorized",
+          work_authorization: "Yes",
         },
         answers: [],
         resumePdfPath: dummyPdfPath,
